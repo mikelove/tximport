@@ -1,15 +1,3 @@
-# Update: tximport now hosted on Bioconductor
-
-# therefore, warning for pull request-ers:
-
-tximport is now hosted on Bioconductor. 
-Be aware that this GitHub repo is therefore
-*not up to date* with the current version of tximport.
-
-http://bioconductor.org/packages/tximport
-
----
-
 # tximport
 
 Import and summarize transcript-level estimates for gene-level analysis
@@ -20,7 +8,7 @@ Description of methods and analysis described in:
 [Differential analyses for RNA-seq: transcript-level estimates improve gene-level inferences](http://f1000research.com/articles/4-1521/v1),
 *F1000Research*, 4:1521, December 2015. doi: 10.12688/f1000research.7563.1
 
-# Description
+---
 
 Imports transcript-level abundance, estimated counts and 
 transcript lengths, and summarizes into matrices for use with downstream

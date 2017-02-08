@@ -5,11 +5,11 @@
 \alias{tximport}
 \title{Import transcript-level abundances and estimated counts for gene-level analysis packages}
 \usage{
-tximport(files, type = c("none", "kallisto", "salmon", "sailfish", "rsem"),
-  txIn = TRUE, txOut = FALSE, countsFromAbundance = c("no", "scaledTPM",
-  "lengthScaledTPM"), tx2gene = NULL, reader = read.delim, geneIdCol,
-  txIdCol, abundanceCol, countsCol, lengthCol, importer, collatedFiles,
-  ignoreTxVersion = FALSE)
+tximport(files, type = c("none", "salmon", "sailfish", "kallisto",
+  "kallisto.h5", "rsem"), txIn = TRUE, txOut = FALSE,
+  countsFromAbundance = c("no", "scaledTPM", "lengthScaledTPM"),
+  tx2gene = NULL, geneIdCol, txIdCol, abundanceCol, countsCol, lengthCol,
+  importer = NULL, collatedFiles, ignoreTxVersion = FALSE)
 
 summarizeToGene(txi, tx2gene, ignoreTxVersion = FALSE,
   countsFromAbundance = c("no", "scaledTPM", "lengthScaledTPM"))
@@ -18,7 +18,7 @@ summarizeToGene(txi, tx2gene, ignoreTxVersion = FALSE,
 \item{files}{a character vector of filenames for the transcript-level abundances}
 
 \item{type}{character, the type of software used to generate the abundances.
-Options are "kallisto", "salmon", "sailfish", "rsem".
+Options are "salmon", "sailfish", "kallisto", "kallisto.h5" (HDF5), "rsem".
 This argument is used to autofill the arguments below (geneIdCol, etc.)
 "none" means that the user will specify these columns.}
 
@@ -38,10 +38,6 @@ the column names are not relevant, but this column order must be used.
 this argument is required for gene-level summarization for methods
 that provides transcript-level estimates only
 (kallisto, Salmon, Sailfish)}
-
-\item{reader}{a function to replace read.delim in the pre-set importer functions,
-for example substituting read_tsv from the readr package will substantially 
-speed up tximport}
 
 \item{geneIdCol}{name of column with gene id. if missing, the gene2tx argument can be used}
 
@@ -75,20 +71,44 @@ gene which can be used as an offset for gene-level analysis.
 Note: tximport does not import bootstrap estimates from kallisto, Salmon, or Sailfish.
 }
 \description{
-\code{tximport} helps to import transcript-level estimates from various
-external software and can summarize abundances, counts, and transcript lengths
-to the gene-level (default) or output transcript-level (see \code{txOut} argument).
+\code{tximport} imports transcript-level estimates from various
+external software and optionally summarizes abundances, counts, and transcript lengths
+to the gene-level (default) or outputs transcript-level matrices
+(see \code{txOut} argument).
+While \code{tximport} summarizes to the gene-level by default, 
+the user can also perform the import and summarization steps manually,
+by specifing \code{txOut=TRUE} and then using the function \code{summarizeToGene}.
+Note however that this is equivalent to \code{tximport} with
+\code{txOut=FALSE} (the default).
 }
 \details{
-\code{summarizeToGene} can be used to summarize a list of transcript-level
-matrices produced by \code{tximport} to the gene level. This is equivalent
-to \code{tximport} with \code{txOut=FALSE}.
+\strong{Solutions} to the error "tximport failed at summarizing to the gene-level":
 
-The last known supported versions of the external quantifiers are:
+\enumerate{
+  \item provide a \code{tx2gene} data.frame linking transcripts to genes (more below)
+  \item avoid gene-level summarization by specifying \code{txOut=TRUE}
+  \item set \code{geneIdCol} to an appropriate column in the files
+}
+
+See \code{vignette('tximport')} for example code for generating a
+\code{tx2gene} data.frame from a \code{TxDb} object.
+Note that the \code{keys} and \code{select} functions used
+to create the \code{tx2gene} object are documented
+in the man page for \link[AnnotationDbi]{AnnotationDb-class} objects
+in the AnnotationDbi package (TxDb inherits from AnnotationDb).
+For further details on generating TxDb objects from various inputs
+see \code{vignette('GenomicFeatures')} from the GenomicFeatures package.
+
+\strong{Version support}: The last known supported versions of the
+external quantifiers are:
 kallisto 0.42.4, Salmon 0.6.0, Sailfish 0.9.0, RSEM 1.2.11.
 }
 \section{Functions}{
 \itemize{
+\item \code{tximport}: Import tx-level quantifications and summarize
+abundances, counts and lengths to gene-level (default)
+or simply output tx-level matrices
+
 \item \code{summarizeToGene}: Summarize tx-level matrices to gene-level
 }}
 \examples{
@@ -108,5 +128,11 @@ tx2gene <- read.csv(file.path(dir, "tx2gene.csv"))
 
 txi <- tximport(files, type="salmon", tx2gene=tx2gene)
 
+}
+\references{
+Charlotte Soneson, Michael I. Love, Mark D. Robinson (2015):
+Differential analyses for RNA-seq: transcript-level estimates
+improve gene-level inferences. F1000Research.
+\url{http://dx.doi.org/10.12688/f1000research.7563.1}
 }
 
