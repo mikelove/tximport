@@ -118,7 +118,12 @@ tximport <- function(files,
                      lengthCol,
                      importer=NULL,
                      collatedFiles,
-                     ignoreTxVersion=FALSE) {
+                     ignoreTxVersion=FALSE,
+                     varReduce=FALSE,
+                     dropInfReps=FALSE) {
+
+  # inferential replicate importer
+  infRepImporter <- NULL
 
   type <- match.arg(type, c("none","salmon","sailfish",
                             "kallisto","kallisto.h5","rsem"))
@@ -145,6 +150,7 @@ tximport <- function(files,
     abundanceCol <- "TPM"
     countsCol <- "NumReads"
     lengthCol <- "EffectiveLength"
+    infRepImporter <- if (dropInfReps) { NULL} else { function(x) readInfRepFish(x, type) }
   }
 
   # kallisto presets
@@ -174,7 +180,11 @@ tximport <- function(files,
     countsCol <- "expected_count"
     lengthCol <- "effective_length"
   }
-    
+
+  infRepType <- "none"
+  if (type %in% c("salmon", "sailfish") && !dropInfReps) {
+    infRepType <- if (varReduce) { "var" } else { "full" }
+  }
   # if input is tx-level, need to summarize abundances, counts and lengths to gene-level
   if (txIn) {
     for (i in seq_along(files)) {
@@ -183,7 +193,17 @@ tximport <- function(files,
       out <- capture.output({
         raw <- as.data.frame(importer(files[i]))
       }, type="message")
-      
+      repInfo <- NULL
+
+      # If we expect inferential replicate info
+      if (infRepType != "none") {
+        repInfo <- infRepImporter(dirname(files[i]))
+        # If we didn't find inferential replicate info
+        if (is.null(repInfo)) {
+          infRepType <- "none"
+        }
+      }
+
       # if external tx2gene table not provided, send user to vignette
       if (is.null(tx2gene) & !txOut) {
           stop("
@@ -209,15 +229,36 @@ tximport <- function(files,
         abundanceMatTx <- mat
         countsMatTx <- mat
         lengthMatTx <- mat
+        if (infRepType == "var") {
+          varMatTx <- mat
+        } else if (infRepType == "full") {
+          infRepMatTx <- lapply(1:length(files), function(x) list(NULL))
+        }
       }
       abundanceMatTx[,i] <- raw[[abundanceCol]]
       countsMatTx[,i] <- raw[[countsCol]]
       lengthMatTx[,i] <- raw[[lengthCol]]
+      if (infRepType == "var") {
+        varMatTx[,i] <- repInfo$vars
+      } else if (infRepType == "full") {
+        infRepMatTx[[i]] <- repInfo$reps
+      }
     }
     message("")
 
-    txi <- list(abundance=abundanceMatTx, counts=countsMatTx, length=lengthMatTx,
+    # if there is no information about inferential replicates
+    if (infRepType == "none") {
+      txi <- list(abundance=abundanceMatTx, counts=countsMatTx, length=lengthMatTx,
                 countsFromAbundance=countsFromAbundance)
+    } else if (infRepType == "var") {
+    # if we're keeping only the variance from inferential replicates
+      txi <- list(abundance=abundanceMatTx, counts=countsMatTx, length=lengthMatTx,
+                  countsFromAbundance=countsFromAbundance, variance=varMatTx)
+    } else if (infRepType == "full") {
+    # if we're keeping the full samples from inferential replicates
+      txi <- list(abundance=abundanceMatTx, counts=countsMatTx, length=lengthMatTx,
+                  countsFromAbundance=countsFromAbundance, infReps=infRepMatTx)
+    }
 
     # if the user requested just the transcript-level data:
     if (txOut) {
@@ -427,7 +468,65 @@ read_kallisto_h5 <- function(fpath, ...) {
   return(result)
 }
 
+# from http://stackoverflow.com/questions/25099825/row-wise-variance-of-a-matrix-in-r
+RowVar <- function(x) {
+  rowSums((x - rowMeans(x))^2)/(dim(x)[2] - 1)
+}
 
+#' Read inferential replicate information from salmon / sailfish 
+#' SF ver >= 0.9.0, Salmon ver >= 0.8.0
+#'
+#' @param fish_dir path to a sailfish output directory
+readInfRepFish <- function(fish_dir, meth) {
+  # aux_info is the default auxiliary directory in salmon
+  # aux is the default directory in sailfish
+  aux_dir <- if (meth == "sailfish") { "aux" } else { "aux_info" }
+
+  # if the default is overwritten, then use that instead
+  cmd_info <- rjson::fromJSON(file=file.path(fish_dir, "cmd_info.json"))
+  if (is.element("auxDir", names(cmd_info))) {
+    aux_dir = cmd_info$auxDir
+  }
+  auxPath <- file.path(fish_dir, aux_dir)
+  if (!file.exists(auxPath)) {
+    return(FALSE)
+  }
+
+  # get all of the meta info
+  minfo <- rjson::fromJSON(file=file.path(auxPath, "meta_info.json"))
+  sampType <- NULL
+  # check if we have explicitly recorded the type of posterior sample
+  # (salmon >= 0.7.3)
+  if (is.element("samp_type", names(minfo))) {
+    sampType <- minfo$samp_type
+  }
+
+  # load bootstrap data if it exists
+  knownSampleTypes <- c("gibbs", "bootstrap")
+  numBoot <- minfo$num_bootstraps
+  if (numBoot > 0) {
+    bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
+    ##
+    # Gibbs samples *used* to be integers, and bootstraps were doubles
+    # Now, however, both types of samples are doubles.  The code below 
+    # tries to load doubles first, but falls back to integers if it fails.
+    ##
+    boots <- tryCatch({
+      readBin(bootCon, "double", n = minfo$num_targets * minfo$num_bootstraps)
+    }, error=function(...) {
+      # close and re-open the connection to reset the file
+      close(bootCon)
+      bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
+      readBin(bootCon, "integer", n = minfo$num_targets * minfo$num_bootstraps)
+    })
+    close(bootCon)
+
+    # rows are transcripts, columns are bootstraps
+    dim(boots) <- c(minfo$num_targets, minfo$num_bootstraps)
+    vars <- RowVar(boots)
+  }
+  list(vars=vars, reps=boots)
+}
 # this is much faster than by(), a bit slower than dplyr summarize_each()
 ## fastby <- function(m, f, fun) {
 ##   idx <- split(1:nrow(m), f)
