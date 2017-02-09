@@ -494,6 +494,14 @@ readInfRepFish <- function(fish_dir, meth) {
 
   # get all of the meta info
   minfo <- rjson::fromJSON(file=file.path(auxPath, "meta_info.json"))
+
+  if ("salmon_version" %in% names(minfo)) {
+    stopifnot(package_version(minfo$salmon_version) > "0.8.0")
+  }
+  if ("sailfish_version" %in% names(minfo)) {
+    stopifnot(package_version(minfo$sailfish_version) > "0.9.0")
+  }
+  
   sampType <- NULL
   # check if we have explicitly recorded the type of posterior sample
   # (salmon >= 0.7.3)
@@ -511,13 +519,16 @@ readInfRepFish <- function(fish_dir, meth) {
     # Now, however, both types of samples are doubles.  The code below 
     # tries to load doubles first, but falls back to integers if it fails.
     ##
+    expected.n <- minfo$num_targets * minfo$num_bootstraps
     boots <- tryCatch({
-      readBin(bootCon, "double", n = minfo$num_targets * minfo$num_bootstraps)
+      bootsIn <- readBin(bootCon, "double", n = expected.n)
+      stopifnot(length(boots.in) == expected.n)
+      bootsIn
     }, error=function(...) {
       # close and re-open the connection to reset the file
       close(bootCon)
       bootCon <- gzcon(file(file.path(auxPath, 'bootstrap', 'bootstraps.gz'), "rb"))
-      readBin(bootCon, "integer", n = minfo$num_targets * minfo$num_bootstraps)
+      readBin(bootCon, "integer", n = expected.n)
     })
     close(bootCon)
 
