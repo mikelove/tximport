@@ -496,10 +496,10 @@ readInfRepFish <- function(fish_dir, meth) {
   minfo <- rjson::fromJSON(file=file.path(auxPath, "meta_info.json"))
 
   if ("salmon_version" %in% names(minfo)) {
-    stopifnot(package_version(minfo$salmon_version) > "0.8.0")
+    stopifnot(package_version(minfo$salmon_version) >= "0.8.0")
   }
   if ("sailfish_version" %in% names(minfo)) {
-    stopifnot(package_version(minfo$sailfish_version) > "0.9.0")
+    stopifnot(package_version(minfo$sailfish_version) >= "0.9.0")
   }
   
   sampType <- NULL
