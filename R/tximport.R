@@ -150,7 +150,7 @@ tximport <- function(files,
     abundanceCol <- "TPM"
     countsCol <- "NumReads"
     lengthCol <- "EffectiveLength"
-    infRepImporter <- if (dropInfReps) { NULL} else { function(x) readInfRepFish(x, type) }
+    infRepImporter <- if (dropInfReps) { NULL } else { function(x) readInfRepFish(x, type) }
   }
 
   # kallisto presets
@@ -170,6 +170,7 @@ tximport <- function(files,
     countsCol <- "est_counts"
     lengthCol <- "eff_length"
     importer <- read_kallisto_h5
+    infRepImporter <- if (dropInfReps) { NULL } else { function(x) readInfRepKallisto(x, type) }
   }
   
   # rsem presets
@@ -182,7 +183,7 @@ tximport <- function(files,
   }
 
   infRepType <- "none"
-  if (type %in% c("salmon", "sailfish") && !dropInfReps) {
+  if (type %in% c("salmon", "sailfish", "kallisto.h5") && !dropInfReps) {
     infRepType <- if (varReduce) { "var" } else { "full" }
   }
   # if input is tx-level, need to summarize abundances, counts and lengths to gene-level
@@ -535,9 +536,34 @@ readInfRepFish <- function(fish_dir, meth) {
     # rows are transcripts, columns are bootstraps
     dim(boots) <- c(minfo$num_targets, minfo$num_bootstraps)
     vars <- RowVar(boots)
+    return(list(vars=vars, reps=boots))
+  } else {
+    return(FALSE)
   }
-  list(vars=vars, reps=boots)
 }
+
+readInfRepKallisto <- function(bear_dir, meth) {
+  if (meth != "kallisto.h5") {
+     return(FALSE)
+  }
+  h5File <- file.path(bear_dir, "abundance.h5")
+  groups <- rhdf5::h5ls(h5File)
+
+  numBoot <- length(groups$group[groups$group == "/bootstrap"])
+  if (numBoot > 0 ) {
+    boots <- rhdf5::h5read(file.path(bear_dir, "abundance.h5"), "/bootstrap")
+    numTxp <- length(boots$bs0)
+    bootMat <- matrix(nrow=numTxp, ncol=numBoot)
+    for ( bsn in 1:numBoot) {
+        bootMat[,bsn] <- boots[bsn][[1]]
+    }
+    vars <- RowVar(bootMat)
+    return(list(vars=vars, reps=bootMat))
+  } else {
+    return(FALSE)
+  }
+}
+
 # this is much faster than by(), a bit slower than dplyr summarize_each()
 ## fastby <- function(m, f, fun) {
 ##   idx <- split(1:nrow(m), f)
