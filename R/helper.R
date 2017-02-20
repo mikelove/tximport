@@ -35,19 +35,14 @@ replaceMissingLength <- function(lengthMat, aveLengthSampGene) {
 # code contributed from Andrew Morgan
 read_kallisto_h5 <- function(fpath, ...) {
   if (!requireNamespace("rhdf5", quietly=TRUE)) {
-    stop("Reading kallisto results from hdf5 files requires Bioconductor package `rhdf5`")
+    stop("reading kallisto results from hdf5 files requires Bioconductor package `rhdf5`")
   }
   counts <- rhdf5::h5read(fpath, "est_counts")
   ids <- rhdf5::h5read(fpath, "aux/ids")
   efflens <- rhdf5::h5read(fpath, "aux/eff_lengths")
 
-  if (length(efflens) != length(ids)) {
-    stop("Different number of target IDs and effective lengths.")
-  }
-  
-  if (length(ids) != length(counts)) {
-    stop("Dimensions of counts and targets don't match. Bootstraps are not yet supported.")
-  }
+  stopifnot(length(counts) == length(ids)) 
+  stopifnot(length(efflens) == length(ids))
 
   result <- data.frame(target_id = ids,
                        eff_length = efflens,

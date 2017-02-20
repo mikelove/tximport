@@ -8,7 +8,9 @@ Description: Imports transcript-level abundance, estimated counts and
         length, weighted by sample-specific transcript abundance
         estimates, is provided as a matrix which can be used as an
         offset for different expression of gene-level counts.
-Author: Michael Love, Charlotte Soneson, Mark Robinson
+Author: Michael Love [cre,aut], Charlotte Soneson [aut], Mark Robinson [aut],
+        Rob Patro [ctb], Andrew Parker Morgan [ctb], Ryan C. Thompson [ctb], 
+        Matt Shirley [ctb]
 Maintainer: Michael Love <michaelisaiahlove@gmail.com>
 License: GPL (>=2)
 VignetteBuilder: knitr

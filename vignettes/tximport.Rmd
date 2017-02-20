@@ -315,11 +315,11 @@ v <- voom(y, design)
 The development of *tximport* has benefited from contributions and
 suggestions from:
 
+[Rob Patro](https://twitter.com/nomad421) (inferential replicates import),
 [Andrew Parker Morgan](https://github.com/andrewparkermorgan) (RHDF5 support),
 [Ryan C. Thompson](https://github.com/DarwinAwardWinner) (RHDF5 support),
 [Matt Shirley](https://twitter.com/mdshw5) (ignoreTxVersion),
 [Stephen Turner](https://twitter.com/genetics_blog),
-[Rob Patro](https://twitter.com/nomad421),
 [Richard Smith-Unna](https://twitter.com/blahah404),
 [Rory Kirchner](https://twitter.com/RoryKirchner),
 [Martin Morgan](https://twitter.com/mt_morgan),

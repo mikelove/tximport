@@ -128,11 +128,15 @@ tximport <- function(files,
   type <- match.arg(type, c("none","salmon","sailfish",
                             "kallisto","kallisto.h5","rsem"))
   countsFromAbundance <- match.arg(countsFromAbundance, c("no","scaledTPM","lengthScaledTPM"))
+
   stopifnot(all(file.exists(files)))
   if (!txIn & txOut) stop("txOut only an option when transcript-level data is read in (txIn=TRUE)")
-
+  if (type=="kallisto.h5" & basename(files[1])=="abundance.tsv") {
+    stop("to read in kallisto HDF5 data, files should not point to `abundance.tsv`")
+  }
+  
   readrStatus <- FALSE
-  if (is.null(importer)) {
+  if (is.null(importer) & type != "kallisto.h5") {
     if (!requireNamespace("readr", quietly=TRUE)) {
       message("reading in files with read.delim (install 'readr' package for speed up)")
       importer <- read.delim
@@ -186,6 +190,7 @@ tximport <- function(files,
   if (type %in% c("salmon", "sailfish", "kallisto.h5") && !dropInfReps) {
     infRepType <- if (varReduce) { "var" } else { "full" }
   }
+  
   # if input is tx-level, need to summarize abundances, counts and lengths to gene-level
   if (txIn) {
     for (i in seq_along(files)) {
@@ -196,10 +201,10 @@ tximport <- function(files,
       }, type="message")
       repInfo <- NULL
 
-      # If we expect inferential replicate info
+      # if we expect inferential replicate info
       if (infRepType != "none") {
         repInfo <- infRepImporter(dirname(files[i]))
-        # If we didn't find inferential replicate info
+        # if we didn't find inferential replicate info
         if (is.null(repInfo)) {
           infRepType <- "none"
         }

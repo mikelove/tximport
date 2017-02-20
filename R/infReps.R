@@ -13,7 +13,7 @@ readInfRepFish <- function(fish_dir, meth) {
   aux_dir <- if (meth == "sailfish") { "aux" } else { "aux_info" }
 
   if (!requireNamespace("rjson", quietly=TRUE)) {
-    stop("Reading inferential replicates for Salmon or Sailfish requires R package `rjson`")
+    stop("reading inferential replicates for Salmon or Sailfish requires R package `rjson`")
   }
   
   # if the default is overwritten, then use that instead
@@ -77,7 +77,7 @@ readInfRepFish <- function(fish_dir, meth) {
 
 readInfRepKallisto <- function(bear_dir, meth) {
   if (!requireNamespace("rhdf5", quietly=TRUE)) {
-    stop("Reading kallisto results from hdf5 files requires Bioconductor package `rhdf5`")
+    stop("reading kallisto results from hdf5 files requires Bioconductor package `rhdf5`")
   }
 
   if (meth != "kallisto.h5") {
