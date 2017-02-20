@@ -53,6 +53,14 @@ read_kallisto_h5 <- function(fpath, ...) {
   return(result)
 }
 
+summarizeFail <- function() {
+  stop("
+
+  tximport failed at summarizing to the gene-level.
+  Please see 'Solutions' in the Details section of the man page: ?tximport
+
+")
+}
 
 # this is much faster than by(), a bit slower than dplyr summarize_each()
 ## fastby <- function(m, f, fun) {

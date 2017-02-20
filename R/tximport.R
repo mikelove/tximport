@@ -33,7 +33,7 @@
 #'
 #' @param files a character vector of filenames for the transcript-level abundances
 #' @param type character, the type of software used to generate the abundances.
-#' Options are "salmon", "sailfish", "kallisto", "kallisto.h5" (HDF5), "rsem".
+#' Options are "salmon", "sailfish", "kallisto", "rsem".
 #' This argument is used to autofill the arguments below (geneIdCol, etc.)
 #' "none" means that the user will specify these columns.
 #' @param txIn logical, whether the incoming files are transcript level (default TRUE)
@@ -103,10 +103,7 @@
 #' 
 #' @export
 tximport <- function(files,
-                     type=c("none",
-                            "salmon","sailfish",
-                            "kallisto", "kallisto.h5", 
-                            "rsem"),
+                     type=c("none","salmon","sailfish","kallisto","rsem"),
                      txIn=TRUE,
                      txOut=FALSE,
                      countsFromAbundance=c("no","scaledTPM","lengthScaledTPM"),
@@ -125,18 +122,15 @@ tximport <- function(files,
   # inferential replicate importer
   infRepImporter <- NULL
 
-  type <- match.arg(type, c("none","salmon","sailfish",
-                            "kallisto","kallisto.h5","rsem"))
+  type <- match.arg(type, c("none","salmon","sailfish","kallisto","rsem"))
   countsFromAbundance <- match.arg(countsFromAbundance, c("no","scaledTPM","lengthScaledTPM"))
 
   stopifnot(all(file.exists(files)))
   if (!txIn & txOut) stop("txOut only an option when transcript-level data is read in (txIn=TRUE)")
-  if (type=="kallisto.h5" & basename(files[1])=="abundance.tsv") {
-    stop("to read in kallisto HDF5 data, files should not point to `abundance.tsv`")
-  }
-  
+
+  kallisto.h5 <- basename(files[1]) == "abundance.h5"
   readrStatus <- FALSE
-  if (is.null(importer) & type != "kallisto.h5") {
+  if (is.null(importer) & !kallisto.h5) {
     if (!requireNamespace("readr", quietly=TRUE)) {
       message("reading in files with read.delim (install 'readr' package for speed up)")
       importer <- read.delim
@@ -164,16 +158,9 @@ tximport <- function(files,
     abundanceCol <- "tpm"
     countsCol <- "est_counts"
     lengthCol <- "eff_length"
+    if (kallisto.h5) {
+      importer <- read_kallisto_h5
     }
-
-  # kallisto.h5 presets
-  if (type == "kallisto.h5") {
-    geneIdCol="gene_id"
-    txIdCol <- "target_id"
-    abundanceCol <- "tpm"
-    countsCol <- "est_counts"
-    lengthCol <- "eff_length"
-    importer <- read_kallisto_h5
     infRepImporter <- if (dropInfReps) { NULL } else { function(x) readInfRepKallisto(x, type) }
   }
   
@@ -187,7 +174,7 @@ tximport <- function(files,
   }
 
   infRepType <- "none"
-  if (type %in% c("salmon", "sailfish", "kallisto.h5") && !dropInfReps) {
+  if (type %in% c("salmon", "sailfish", "kallisto") & !dropInfReps) {
     infRepType <- if (varReduce) { "var" } else { "full" }
   }
   
@@ -212,12 +199,7 @@ tximport <- function(files,
 
       # if external tx2gene table not provided, send user to vignette
       if (is.null(tx2gene) & !txOut) {
-          stop("
-
-  tximport failed at summarizing to the gene-level.
-  Please see 'Solutions' in the Details section of the man page: ?tximport
-
-")
+        summarizeFail() # ...long message in helper.R
       } else {
         # e.g. Salmon and kallisto do not include the gene ID, need an external table
         stopifnot(all(c(lengthCol, abundanceCol) %in% names(raw)))
