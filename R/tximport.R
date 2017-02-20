@@ -523,7 +523,7 @@ readInfRepFish <- function(fish_dir, meth) {
     expected.n <- minfo$num_targets * minfo$num_bootstraps
     boots <- tryCatch({
       bootsIn <- readBin(bootCon, "double", n = expected.n)
-      stopifnot(length(boots.in) == expected.n)
+      stopifnot(length(bootsIn) == expected.n)
       bootsIn
     }, error=function(...) {
       # close and re-open the connection to reset the file
