@@ -16,7 +16,7 @@ Imports: utils
 Suggests: knitr, rmarkdown, testthat, tximportData,
         TxDb.Hsapiens.UCSC.hg19.knownGene, readr (>= 0.2.2),
 	limma, edgeR, DESeq2 (>= 1.11.6),
-	rhdf5
+	rhdf5, rjson
 biocViews: RNASeq, Transcription, GeneExpression, DataImport
 RoxygenNote: 5.0.1
 NeedsCompilation: no
