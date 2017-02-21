@@ -3,10 +3,11 @@ RowVar <- function(x) {
   rowSums((x - rowMeans(x))^2)/(dim(x)[2] - 1)
 }
 
-#' Read inferential replicate information from salmon / sailfish 
-#' SF ver >= 0.9.0, Salmon ver >= 0.8.0
-#'
-#' @param fish_dir path to a sailfish output directory
+# Read inferential replicate information from salmon / sailfish
+#
+# SF ver >= 0.9.0, Salmon ver >= 0.8.0
+#
+# fish_dir = path to a sailfish output directory
 readInfRepFish <- function(fish_dir, meth) {
   # aux_info is the default auxiliary directory in salmon
   # aux is the default directory in sailfish
@@ -75,14 +76,11 @@ readInfRepFish <- function(fish_dir, meth) {
   }
 }
 
-readInfRepKallisto <- function(bear_dir, meth) {
+readInfRepKallisto <- function(bear_dir) {
   if (!requireNamespace("rhdf5", quietly=TRUE)) {
     stop("reading kallisto results from hdf5 files requires Bioconductor package `rhdf5`")
   }
 
-  if (meth != "kallisto.h5") {
-     return(FALSE)
-  }
   h5File <- file.path(bear_dir, "abundance.h5")
   groups <- rhdf5::h5ls(h5File)
 
