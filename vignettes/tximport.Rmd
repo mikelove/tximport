@@ -15,7 +15,7 @@ vignette: >
 ---
 
 Import and summarize transcript-level abundance estimates for
-gene-level analysis with Bioconductor packages, such as *edgeR*,
+transcript- and gene-level analysis with Bioconductor packages, such as *edgeR*,
 *DESeq2*, and *limma-voom*.
 The motivation and methods for the functions
 provided by the *tximport* package are described in the following
@@ -202,18 +202,27 @@ txi <- tximport("quant.sf", type="none", txOut=TRUE,
 
 ## kallisto
 
-kallisto `abundance.tsv` files can be imported by setting type to `"kallisto"`.
+kallisto `abundance.h5` files can be imported by setting type to
+`"kallisto"`. Note that this requires that you have the Bioconductor package 
+[rhdf5](http://bioconductor.org/packages/rhdf5) installed.
+(Here we only demonstrate reading in transcript-level information.)
+
+```{r}
+files <- file.path(dir, "kallisto_h5", samples$run, "abundance.h5")
+names(files) <- paste0("sample",1:6)
+txi.kallisto <- tximport(files, type="kallisto", txOut=TRUE)
+head(txi.kallisto$counts)
+```
+
+kallisto `abundance.tsv` files can be imported as well, but this is
+typically slower than the approach above.
 
 ```{r}
 files <- file.path(dir, "kallisto", samples$run, "abundance.tsv")
 names(files) <- paste0("sample",1:6)
-txi.kallisto <- tximport(files, type="kallisto", tx2gene=tx2gene)
-head(txi.kallisto$counts)
+txi.kallisto.tsv <- tximport(files, type="kallisto", tx2gene=tx2gene)
+head(txi.kallisto.tsv$counts)
 ```
-
-In order to read from `abundance.h5` files, set type to
-`"kallisto.h5"`. This requires that you have the Bioconductor package 
-[rhdf5](http://bioconductor.org/packages/rhdf5) installed.
 
 ## RSEM
 

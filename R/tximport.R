@@ -1,5 +1,5 @@
 #' Import transcript-level abundances and estimated counts
-#' for gene- and transcript-level analysis packages
+#' for transcript- and gene-level analysis packages
 #'
 #' \code{tximport} imports transcript-level estimates from various
 #' external software and optionally summarizes abundances, counts,
@@ -151,7 +151,7 @@ tximport <- function(files,
     } else {
       message("reading in files with read_tsv")
       readrStatus <- TRUE
-      importer <- function(x) readr::read_tsv(x, progress=FALSE)
+      importer <- function(x) readr::read_tsv(x, progress=FALSE, col_types=readr::cols())
     }
   }
   
@@ -175,7 +175,7 @@ tximport <- function(files,
     if (kallisto.h5) {
       importer <- read_kallisto_h5
     }
-    infRepImporter <- if (dropInfReps) { NULL } else { function(x) readInfRepKallisto(x) }
+    infRepImporter <- if (dropInfReps) { NULL } else { readInfRepKallisto }
   }
   
   # rsem presets
@@ -197,12 +197,10 @@ tximport <- function(files,
     for (i in seq_along(files)) {
       message(i," ",appendLF=FALSE)
 
-      out <- capture.output({
-        raw <- as.data.frame(importer(files[i]))
-      }, type="message")
-      repInfo <- NULL
+      raw <- as.data.frame(importer(files[i]))
 
       # if we expect inferential replicate info
+      repInfo <- NULL
       if (infRepType != "none") {
         repInfo <- infRepImporter(dirname(files[i]))
         # if we didn't find inferential replicate info

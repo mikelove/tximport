@@ -14,17 +14,18 @@ readInfRepFish <- function(fish_dir, meth) {
   aux_dir <- if (meth == "sailfish") { "aux" } else { "aux_info" }
 
   if (!requireNamespace("rjson", quietly=TRUE)) {
-    stop("reading inferential replicates for Salmon or Sailfish requires R package `rjson`")
+    stop("importing inferential replicates for Salmon or Sailfish requires package `rjson`.
+  to skip this step, set dropInfReps=TRUE")
   }
   
   # if the default is overwritten, then use that instead
   cmd_info <- rjson::fromJSON(file=file.path(fish_dir, "cmd_info.json"))
   if (is.element("auxDir", names(cmd_info))) {
-    aux_dir = cmd_info$auxDir
+    aux_dir <- cmd_info$auxDir
   }
   auxPath <- file.path(fish_dir, aux_dir)
   if (!file.exists(auxPath)) {
-    return(FALSE)
+    return(NULL)
   }
 
   # get all of the meta info
@@ -72,7 +73,7 @@ readInfRepFish <- function(fish_dir, meth) {
     vars <- RowVar(boots)
     return(list(vars=vars, reps=boots))
   } else {
-    return(FALSE)
+    return(NULL)
   }
 }
 
@@ -82,6 +83,7 @@ readInfRepKallisto <- function(bear_dir) {
   }
 
   h5File <- file.path(bear_dir, "abundance.h5")
+  if (!file.exists(h5File)) return(NULL)
   groups <- rhdf5::h5ls(h5File)
 
   numBoot <- length(groups$group[groups$group == "/bootstrap"])
@@ -90,11 +92,11 @@ readInfRepKallisto <- function(bear_dir) {
     numTxp <- length(boots$bs0)
     bootMat <- matrix(nrow=numTxp, ncol=numBoot)
     for (bsn in seq_len(numBoot)) {
-        bootMat[,bsn] <- boots[bsn][[1]]
+      bootMat[,bsn] <- boots[bsn][[1]]
     }
     vars <- RowVar(bootMat)
     return(list(vars=vars, reps=bootMat))
   } else {
-    return(FALSE)
+    return(NULL)
   }
 }
